@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+         @font-face {
+            font-family: 'MinhaFonteExterna';
+            src: url('8-bit-hud.TTF') format('truetype');
+        }
+
+        body {
+            font-family: 'MinhaFonteExterna', sans-serif;
+        }
+        #analogCanvas,
+        #barCanvas {
+            width: 360px;
+            height: 640px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #barCanvas {
+            z-index: -1; 
+            background-color: black;
+        }
+    </style>
+    <title>Astro</title>
+</head>
+<body>
+    <canvas id="analogCanvas" width="360" height="640"></canvas>
+    <canvas id="barCanvas" width="360" height="640"></canvas>
+
+    <script>
+        const analogCanvas = document.getElementById('analogCanvas');
+        const analogCtx = analogCanvas.getContext('2d');
+        const barCanvas = document.getElementById('barCanvas');
+        const ctx2 = barCanvas.getContext('2d');
+        var control = false;
+        var projectiles = [];
+        var trotle;
+        var score = 0;
+        var naveImage = new Image();
+        naveImage.src = 'naves/NV1.png';
+        ctx2.imageSmoothingEnabled = false;
+        var trotleImg = new Image();
+        document.fonts.load('90px MinhaFonteExterna').then(function() {
+            analogCtx.font = '12px MinhaFonteExterna';
+            ctx2.font = '20px MinhaFonteExterna';
+        });
+
+        const ABLImages = [];
+        for (let i = 1; i <= 4; i++) {
+            const enmImage = new Image();
+            enmImage.src = 'naves/ABL' + i + '.png';
+            ABLImages.push(enmImage);
+        }
+        const MSQImages = [];
+        for (let i = 1; i <= 4; i++) {
+            const enmImage = new Image();
+            enmImage.src = 'naves/MSQ' + i + '.png';
+            MSQImages.push(enmImage);
+        }
+        const SPDImages = [];
+        for (let i = 1; i <= 4; i++) {
+            const enmImage = new Image();
+            enmImage.src = 'naves/SPD' + i + '.png';
+            SPDImages.push(enmImage);
+        }
+        const SNKImages = [];
+        for (let i = 1; i <= 7; i++) {
+            const enmImage = new Image();
+            enmImage.src = 'naves/SNK' + i + '.png';
+            SNKImages.push(enmImage);
+        }
+        
+
+        const bar = {
+            x: barCanvas.width / 2,
+            y: barCanvas.height / 2,
+            LP:10,
+            width: 20,
+            height: 100,
+            angle: 0,
+            angularVelocity: 0,
+            acceleration: 0.002,
+            velacceleration: 0.02,
+            friction: 0.9,
+            maxSpeed: 0.06,
+            maxVelocity: 0.9,
+            velocity: { x: 0, y: 0 }
+        };
+
+
+        const button = {
+            x: analogCanvas.width / 2,
+            y: analogCanvas.height / 2,
+            radius: 20,
+            isDragging: false
+        };
+
+        const areaLimit = {
+            x: analogCanvas.width / 2,
+            y: analogCanvas.height / 2,
+            radius: 70
+        };
+
+        const enemies = [];
+
+        function initializeEnemies() {//Aqui acres centar logica LP depois
+
+            if(enemies.length<20){
+            for (let i = 0; i < 5; i++) {
+                const side = Math.floor(Math.random() * 4); 
+                if(side===0){
+                    var posx = Math.random() * barCanvas.width-10;
+                    var posy = 0;
+                }
+                if(side===1){
+                    var posx = barCanvas.width;
+                    var posy = Math.random() * barCanvas.height+10;
+                }   
+                if(side===2){
+                    var posx = Math.random() * barCanvas.width+10;
+                    var posy = barCanvas.height;
+                }
+                if(side===3){
+                    var posx = 0;
+                    var posy = Math.random() * barCanvas.height-10;
+                }                                                 
+                
+                if(score>4 && score<10){
+                    const enemy = {
+                    type:"ABL",
+                    LP:2,
+                    size:13,
+                    x: posx,
+                    y: posy,
+                    speed: 0.4
+                    };
+                    enemies.push(enemy);
+                }else if(score<5){
+                    const enemy = {
+                    type:"MSQ",
+                    LP:1,
+                    size:11,
+                    x: posx,
+                    y:posy,
+                    speed: 0.55
+                    };
+                    enemies.push(enemy);
+                }else if(score>19 && score<30){
+                    const enemy = {
+                    type:"SPD",
+                    LP:4,
+                    size:22,
+                    x: posx,
+                    y:posy,
+                    speed: 0.4
+                    };
+                    enemies.push(enemy);
+                }else if(score>9 && score<20){
+                    const enemy = {
+                    type:"SNK",
+                    LP:3,
+                    size:22,
+                    x: posx,
+                    y:posy,
+                    speed: 0.4
+                    };
+                    enemies.push(enemy);
+                }
+                
+                
+            }
+            }
+        }
+
+        const squares = [];
+
+        function initializeSquares() {
+            for (let i = 0; i < 20; i++) {
+                squares.push({
+                    x: Math.random() * barCanvas.width,
+                    y: Math.random() * barCanvas.height,
+                    size: 2
+                });
+            }
+        }
+
+        function drawSquares() {
+            for (const square of squares) {
+                ctx2.fillStyle = 'white';
+                ctx2.fillRect(square.x, square.y, square.size, square.size);
+            }
+        }
+
+        function updateSquarePosition(square) {//aqui
+            square.x= square.x - bar.velocity.x
+            square.y= square.y - bar.velocity.y
+
+            if (square.x < 0) square.x = barCanvas.width;
+            if (square.x > barCanvas.width) square.x = 0;
+            if (square.y < 0) square.y = barCanvas.height;
+            if (square.y > barCanvas.height) square.y = 0;
+        }
+
+        function updateSquaresPosition() {
+            for (const square of squares) {
+                updateSquarePosition(square);
+            }
+        }
+
+
+        function drawButton() {
+            analogCtx.clearRect(0, 0, analogCanvas.width, analogCanvas.height);
+            if (control) {
+                analogCtx.beginPath();
+                analogCtx.arc(areaLimit.x, areaLimit.y, areaLimit.radius, 0, 2 * Math.PI);
+                analogCtx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
+                analogCtx.stroke();
+
+                analogCtx.beginPath();
+                analogCtx.arc(button.x, button.y, button.radius, 0, 2 * Math.PI);
+                analogCtx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+                analogCtx.fill();
+                analogCtx.stroke();
+                
+                trotle = Math.sqrt(Math.pow(areaLimit.x - button.x, 2) + Math.pow(areaLimit.y - button.y, 2));
+            }
+            analogCtx.fillStyle = 'white';
+            analogCtx.fillText(`score: ${score}`, analogCanvas.width*0.01, 16);
+            analogCtx.fillText(`life:`,analogCanvas.width*0.50,16);
+            analogCtx.fillRect(analogCanvas.width*0.70,3,9*bar.LP,12);
+        }
+
+        var trotleAnimationFrame = 0;
+        function drawBar() {
+            ctx2.save();
+            ctx2.translate(bar.x, bar.y);
+            ctx2.rotate(bar.angle + 90 * (Math.PI / 180));
+            ctx2.drawImage(naveImage, -naveImage.width * 2 / 2, -naveImage.height * 2 / 2, naveImage.width * 2, naveImage.height * 2);
+            
+            if (control === true ) {
+               
+                trotleImg.src = 'naves/TRTLE' + (trotleAnimationFrame % 5 + 1) + '.png';
+                ctx2.drawImage(trotleImg, -naveImage.width / 2 + 1, naveImage.height, trotleImg.width * 2, trotleImg.height * 2);
+            }
+
+            ctx2.restore();
+        }
+
+
+        function drawProjectiles() {
+            for (let i = 0; i < projectiles.length; i++) {
+                const projectile = projectiles[i];
+                ctx2.fillStyle = `cyan`;
+                ctx2.fillRect(projectile.x, projectile.y, 2, 2);
+
+                projectile.x += projectile.vx - bar.velocity.x;
+                projectile.y += projectile.vy -  bar.velocity.y;
+
+                projectile.life--;
+
+                if (projectile.life <= 0) {
+                    projectiles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function shoot() { 
+                projectiles.push({
+                    x: bar.x,
+                    y: bar.y,
+                    vx: Math.sin(bar.angle + 90 * (Math.PI / 180)) * 5,
+                    vy: -Math.cos(bar.angle + 90 * (Math.PI / 180)) * 5,
+                    life: 100
+                });
+                
+        }
+
+        shootInterval = setInterval(shoot, 1000);
+        const frameSpeed = 5; 
+        let frameCounter = 0; 
+
+        function drawEnemies() {
+            for (const enemy of enemies) {
+                ctx2.save();
+                ctx2.translate(enemy.x, enemy.y);
+
+                const angleToCenter = Math.atan2(barCanvas.height / 2 - enemy.y, barCanvas.width / 2 - enemy.x);
+                ctx2.rotate(angleToCenter + 90 * (Math.PI / 180));
+                if(enemy.type==="ABL"){
+                     const animationIndex = Math.floor(frameCounter / frameSpeed) % ABLImages.length;
+                    ctx2.drawImage(ABLImages[animationIndex], -ABLImages[animationIndex].width, -ABLImages[animationIndex].height, ABLImages[animationIndex].width * 2, ABLImages[animationIndex].height * 2); 
+                }else if(enemy.type==="MSQ"){
+                     const animationIndex = Math.floor(frameCounter / frameSpeed) % MSQImages.length;
+                    ctx2.drawImage(MSQImages[animationIndex], -MSQImages[animationIndex].width, -MSQImages[animationIndex].height, MSQImages[animationIndex].width * 2, MSQImages[animationIndex].height * 2);
+                }else if(enemy.type==="SPD"){
+                     const animationIndex = Math.floor(frameCounter / frameSpeed) % SPDImages.length;
+                    ctx2.drawImage(SPDImages[animationIndex], -SPDImages[animationIndex].width, -SPDImages[animationIndex].height, SPDImages[animationIndex].width * 2, SPDImages[animationIndex].height * 2);
+                }else if(enemy.type==="SNK"){
+                     const animationIndex = Math.floor(frameCounter / frameSpeed) % SNKImages.length;
+                    ctx2.drawImage(SNKImages[animationIndex], -SNKImages[animationIndex].width, -SNKImages[animationIndex].height, SNKImages[animationIndex].width * 2, SNKImages[animationIndex].height * 2);
+                }
+                
+
+                ctx2.restore();
+            }
+            frameCounter++;
+        }
+
+
+        function handleEnemyCollision(enemy, otherEnemy) {
+            const angleToOtherEnemy = Math.atan2(otherEnemy.y - enemy.y, otherEnemy.x - enemy.x);
+            enemy.x -= Math.cos(angleToOtherEnemy) * enemy.speed;
+            enemy.y -= Math.sin(angleToOtherEnemy) * enemy.speed;
+        }
+
+function updateEnemies() {
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+        const angleToNave = Math.atan2(bar.y - enemy.y, bar.x - enemy.x);
+        enemy.x += Math.cos(angleToNave) * enemy.speed - bar.velocity.x;
+        enemy.y += Math.sin(angleToNave) * enemy.speed - bar.velocity.y;
+
+        const distanceToBar = Math.sqrt(Math.pow(bar.x - enemy.x, 2) + Math.pow(bar.y - enemy.y, 2));
+        const minDistanceToBar = bar.height / 4;
+
+        if (distanceToBar < minDistanceToBar) {
+            bar.LP-=0.01;
+            console.log(bar.LP);
+            if(bar.LP<=0){
+                game_over();
+            }
+            const angleToNave = Math.atan2(bar.y - enemy.y, bar.x - enemy.x);
+            enemy.x -= Math.cos(angleToNave) * enemy.speed - bar.velocity.x;
+            enemy.y -= Math.sin(angleToNave) * enemy.speed - bar.velocity.y;
+        }
+
+        for (let j = 0; j < projectiles.length; j++) {
+            const projectile = projectiles[j];
+            const distance = Math.sqrt(Math.pow(enemy.x - projectile.x, 2) + Math.pow(enemy.y - projectile.y, 2));
+            const minDistance = 15;
+
+            if (distance < minDistance) {
+                projectiles.splice(j, 1);
+                enemies[i].LP -=1;//Aqui vai o wpn_dmg do jogador
+                if(enemies[i].LP < 1){
+                  enemies.splice(i, 1);
+                }
+                score += 1
+            }
+        }
+
+        for (let j = 0; j < enemies.length; j++) {
+            if (i !== j) {
+                const otherEnemy = enemies[j];
+                const distance = Math.sqrt(Math.pow(enemy.x - otherEnemy.x, 2) + Math.pow(enemy.y - otherEnemy.y, 2));
+                const minDistance = enemy.size/2 + otherEnemy.size/2 +3;
+                if (distance < minDistance) {
+                    handleEnemyCollision(enemy, otherEnemy);
+                }
+            }
+        }
+    }
+}
+
+
+        function game_loop() {
+            ctx2.clearRect(0, 0, barCanvas.width, barCanvas.height);
+
+            const angleToButton = Math.atan2(button.y - areaLimit.y, button.x - areaLimit.x);
+
+            if (Math.abs(angleToButton - bar.angle) > Math.PI) {
+                if (angleToButton < bar.angle) {
+                    bar.angle -= 2 * Math.PI;
+                } else {
+                    bar.angle += 2 * Math.PI;
+                }
+            }
+
+            bar.angularVelocity += (angleToButton - bar.angle) * bar.acceleration;
+            bar.angularVelocity *= bar.friction;
+            bar.angularVelocity = Math.max(-bar.maxSpeed, Math.min(bar.angularVelocity, bar.maxSpeed));
+
+            bar.angle += bar.angularVelocity;
+
+            if (control === true ) {
+                trotleAnimationFrame++;
+                bar.velocity.x += Math.sin(bar.angle + 90 * (Math.PI / 180)) * bar.velacceleration;
+                bar.velocity.y -= Math.cos(bar.angle + 90 * (Math.PI / 180)) * bar.velacceleration;
+
+                bar.velocity.x *= 0.98;
+                bar.velocity.y *= 0.98;
+
+                if (bar.velocity.x > bar.maxVelocity) {
+                    bar.velocity.x = bar.maxVelocity;
+                }else if (-bar.velocity.x > bar.maxVelocity) {
+                    bar.velocity.x = -bar.maxVelocity;
+                }
+                if (bar.velocity.y > bar.maxVelocity) {
+                    bar.velocity.y = bar.maxVelocity;
+                }else if (-bar.velocity.y > bar.maxVelocity) {
+                    bar.velocity.y = -bar.maxVelocity;
+                }
+
+            } else {
+                trotleAnimationFrame = 0;
+                bar.velocity.x *= 0.95;
+                bar.velocity.y *= 0.95;
+            }
+
+            drawProjectiles();
+            drawBar();
+            drawEnemies();
+            updateEnemies();
+            updateSquaresPosition();
+            drawSquares();
+            drawButton();
+        }
+
+
+
+        function handleMouseDown(event) {
+            control = true;
+
+            const mouseX = event.clientX - analogCanvas.offsetLeft;
+            const mouseY = event.clientY - analogCanvas.offsetTop;
+            areaLimit.x = event.clientX - analogCanvas.offsetLeft;
+            areaLimit.y = event.clientY - analogCanvas.offsetTop;
+
+            button.isDragging = true;
+            const distance = Math.sqrt((mouseX - button.x) * (mouseX - button.x) + (mouseY - button.y) * (mouseY - button.y));
+            
+        }
+
+        function handleMouseUp() {
+            control = false;
+            button.isDragging = false;
+            analogCtx.clearRect(0, 0, analogCanvas.width, analogCanvas.height);           
+        }
+
+        function handleMouseMove(event) {
+            if (button.isDragging) {
+                button.x = event.clientX - analogCanvas.offsetLeft;
+                button.y = event.clientY - analogCanvas.offsetTop;
+
+                const distance = Math.sqrt((button.x - areaLimit.x) * (button.x - areaLimit.x) + (button.y - areaLimit.y) * (button.y - areaLimit.y));
+                if (distance > areaLimit.radius) {
+                    const angle = Math.atan2(button.y - areaLimit.y, button.x - areaLimit.x);
+                    button.x = areaLimit.x + areaLimit.radius * Math.cos(angle);
+                    button.y = areaLimit.y + areaLimit.radius * Math.sin(angle);
+                }
+
+                
+
+                drawButton();
+            }
+        }
+
+        function handleTouchStart(event) {
+            event.preventDefault();
+            control = true;
+
+            const touch = event.touches[0];
+            areaLimit.x = touch.clientX - analogCanvas.offsetLeft;
+            areaLimit.y = touch.clientY - analogCanvas.offsetTop;
+
+            button.isDragging = true;
+        }
+
+        function handleTouchMove(event) {
+            event.preventDefault();
+            if (button.isDragging) {
+                const touch = event.touches[0];
+                button.x = touch.clientX - analogCanvas.offsetLeft;
+                button.y = touch.clientY - analogCanvas.offsetTop;
+
+                const distance = Math.sqrt((button.x - areaLimit.x) * (button.x - areaLimit.x) + (button.y - areaLimit.y) * (button.y - areaLimit.y));
+                if (distance > areaLimit.radius) {
+                    const angle = Math.atan2(button.y - areaLimit.y, button.x - areaLimit.x);
+                    button.x = areaLimit.x + areaLimit.radius * Math.cos(angle);
+                    button.y = areaLimit.y + areaLimit.radius * Math.sin(angle);
+                }
+
+                drawButton();
+            }
+        }
+
+        function handleTouchEnd(event) {
+            event.preventDefault();
+            control = false;
+            button.isDragging = false;
+            analogCtx.clearRect(0, 0, analogCanvas.width, analogCanvas.height);
+        }
+
+        analogCanvas.addEventListener('mousedown', handleMouseDown);
+        analogCanvas.addEventListener('mouseup', handleMouseUp);
+        analogCanvas.addEventListener('mousemove', handleMouseMove);
+
+        analogCanvas.addEventListener('touchstart', handleTouchStart);
+        analogCanvas.addEventListener('touchmove', handleTouchMove);
+        analogCanvas.addEventListener('touchend', handleTouchEnd);
+
+        initializeEnemiesInterval = setInterval(initializeEnemies, 6000);
+
+        initializeSquares();
+
+        gameLoopInterval = setInterval(game_loop, 16);
+
+        function game_over() {
+            clearInterval(initializeEnemiesInterval);
+            clearInterval(gameLoopInterval);
+            clearInterval(shootInterval);
+            ctx2.clearRect(0, 0, barCanvas.width, barCanvas.height);
+            ctx2.fillStyle="white";
+            ctx2.fillText("GAME OVER", 54, barCanvas.height / 2);
+        }
+        drawBar();
+    </script>
+</body>
+</html>
