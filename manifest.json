@@ -1,0 +1,50 @@
+{
+  "background_color": "#000000",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Astro survive",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Astro",
+  "start_url": "/",
+  "theme_color": "#00fcf8",
+  "id": "ASTRO",
+  "description": "A simple survival wave game in 8bits style",
+  "iarc_rating_id": "Artro survival",
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=org.jefersonbelmiro.rapture&amp;pcampaignid=web_share",
+      "id": "Endless waves survival"
+    },
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.vkslrzm.Zombie&amp;pcampaignid=web_share",
+      "id": "Magic Survival"
+    }
+  ],
+  "categories": [
+    "games"
+  ],
+  "edge_side_panel": {
+    "preferred_width": 360
+  },
+  "icons": {
+    "print1": {
+      "src": "caminho/para/seu/print1.png",
+      "sizes": "324x575",
+      "type": "image/png"
+    },
+    "print2": {
+      "src": "caminho/para/seu/print2.png",
+      "sizes": "324x577",
+      "type": "image/png"
+    },
+    "print3": {
+      "src": "caminho/para/seu/print3.png",
+      "sizes": "324x577",
+      "type": "image/png"
+    }
+  }
+}
