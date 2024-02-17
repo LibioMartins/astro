@@ -36,10 +36,12 @@
         const analogCtx = analogCanvas.getContext('2d');
         const barCanvas = document.getElementById('barCanvas');
         const ctx2 = barCanvas.getContext('2d');
+        var start_menu = true;
         var control = false;
         var projectiles = [];
         var trotle;
         var score = 0;
+        var cont = 0;
         var naveImage = new Image();
         var game = "play";
         var selected = 0;
@@ -152,7 +154,7 @@
                     var posy = Math.random() * barCanvas.height-10;
                 }                                                 
                 var enemy
-                if(score>14 && score<30){
+                if((score>14 && score<30)||(score>150 && i===5 || i===4 || i===3)){
                     enemy = {
                     type:"ABL",
                     score:2,
@@ -176,7 +178,7 @@
                     };
                     enemies.push(enemy);
                 }
-                if(score>29 && score<40){
+                if((score>29 && score<40) || (score>150 && i===2)){
                      enemy = {
                     type:"SPD",
                     score:5,
@@ -224,7 +226,7 @@
                     };
                     enemies.push(enemy);
                 }
-                if(score>129 && score<150){
+                if((score>129 && score<150)||(score>150 && i===4)){
                      enemy = {
                     type:"SQR",
                     score:7,
@@ -235,10 +237,7 @@
                     speed: 0.77
                     };
                     enemies.push(enemy);
-                }
-                
-                
-                
+                }   
             }
             }
         }
@@ -278,8 +277,31 @@
             }
         }
 
-
+        var contUp = true
         function drawButton() {
+            if(start_menu===true){
+                //OSCILAÇAO
+                if(cont>=1){
+                    contUp=false;
+                }
+                if(cont<=0){
+                    contUp=true;
+                }
+                if(contUp===true){
+                    cont=cont+0.02;
+                }else{
+                    cont=cont-0.02;
+                }
+                var gradient = ctx2.createLinearGradient(0, 0, analogCanvas.width, 0);
+                gradient.addColorStop(1-cont, "blue");
+                gradient.addColorStop(cont, "cyan");
+                ctx2.font = '50px MinhaFonteExterna';
+                ctx2.fillStyle=gradient;
+                ctx2.fillText("astro", 40, barCanvas.height / 2);
+                ctx2.font = '13px MinhaFonteExterna';
+                ctx2.fillStyle="white";
+                ctx2.fillText("touch to start",80,barCanvas.height / 2+20);
+            }else{
             analogCtx.clearRect(0, 0, analogCanvas.width, analogCanvas.height);
             if (control) {
                 analogCtx.beginPath();
@@ -365,7 +387,7 @@
                 game="play";
                 game_start();
             }
-            
+           } 
         }
 
         var trotleAnimationFrame = 0;
@@ -424,7 +446,6 @@
         }
 
 
-        shootInterval = setInterval(shoot, bar.coolDown);
         const frameSpeed = 5; 
         let frameCounter = 0; 
 
@@ -588,22 +609,23 @@ function updateEnemies() {
                 upgrade_menu();
                 console.log(`Nex upgrade ${bar.level**3+1}`);
             }
-            if(score>100 && enemies.length===0){
-                ctx2.fillText("see you in space cowboy...", 54, barCanvas.height / 2);
-            }
            
         }
 
 
         function handleMouseDown(event) {
             control = true;
-
+            if(start_menu===true){
+                start_menu=false;
+                game_start();
+            };
             const mouseX = event.clientX - analogCanvas.offsetLeft;
             const mouseY = event.clientY - analogCanvas.offsetTop;
             areaLimit.x = event.clientX - analogCanvas.offsetLeft;
             areaLimit.y = event.clientY - analogCanvas.offsetTop;
 
             if(areaLimit.x>analogCanvas.width*0.845-20 && areaLimit.x<analogCanvas.width*0.845+20 && areaLimit.y<90 && areaLimit.y>20){
+
                 if(game==="play"){
                     game="pause";
                     game_pause();
@@ -665,10 +687,44 @@ function updateEnemies() {
         function handleTouchStart(event) {
             event.preventDefault();
             control = true;
-
+            if(start_menu===true){
+                start_menu=false;
+                game_start();
+            };
             const touch = event.touches[0];
             areaLimit.x = touch.clientX - analogCanvas.offsetLeft;
             areaLimit.y = touch.clientY - analogCanvas.offsetTop;
+
+            if(areaLimit.x>analogCanvas.width*0.845-20 && areaLimit.x<analogCanvas.width*0.845+20 && areaLimit.y<90 && areaLimit.y>20){
+
+            if(game==="play"){
+                game="pause";
+                game_pause();
+            }else if(game==="pause"){
+                game="play";
+                game_start();
+            }
+
+            }else if(areaLimit.x<240 && areaLimit.x>100 && areaLimit.y<barCanvas.height / 2+39 && areaLimit.y>barCanvas.height / 2+28 && game ==="over"){//aqui
+            game_restart();
+
+            }else if(game === "upgrade"){
+            if(areaLimit.x>analogCanvas.width*0.10 && areaLimit.x<analogCanvas.width*0.10 + 300 && areaLimit.y>175 && areaLimit.y<205 && bar.velacceleration!=0.03456){
+                selected=1;
+            }
+            else if(areaLimit.x>analogCanvas.width*0.10 && areaLimit.x<analogCanvas.width*0.10 + 300 && areaLimit.y>205 && areaLimit.y<225 && bar.acceleration!=0.007){
+                selected=2;
+            }
+            else if(areaLimit.x>analogCanvas.width*0.10 && areaLimit.x<analogCanvas.width*0.10 + 300 && areaLimit.y>235 && areaLimit.y<260 && bar.shot!=4){
+                selected=3;
+            }
+            else if(areaLimit.x>analogCanvas.width*0.10 && areaLimit.x<analogCanvas.width*0.10 + 300 && areaLimit.y>265 && areaLimit.y<290 && bar.coolDown!=410){
+                selected=4;
+            }
+            else{
+                selected = 0;
+            }
+            }
 
             button.isDragging = true;
         }
@@ -706,11 +762,9 @@ function updateEnemies() {
         analogCanvas.addEventListener('touchmove', handleTouchMove);
         analogCanvas.addEventListener('touchend', handleTouchEnd);
 
-        initializeEnemiesInterval = setInterval(initializeEnemies, 6000);
 
         initializeSquares();
 
-        gameLoopInterval = setInterval(game_loop, 16);
         setInterval(drawButton, 16);
         
         function game_over() {
@@ -748,6 +802,7 @@ function updateEnemies() {
             bar.maxSpeed=0.06;
             bar.maxVelocity=0.9;
             bar.coolDown=1000;
+            bar.acceleration=0.002;
         }
         function upgrade_menu() {
             clearInterval(initializeEnemiesInterval);
