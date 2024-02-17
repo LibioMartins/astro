@@ -130,11 +130,13 @@
         };
 
         var enemies = [];
-
+        var pop=20;
         function initializeEnemies() {
-
+            if(score>200){
+                pop=Math.round(score/5);
+            }
             if(enemies.length<20){
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 7; i++) {
                 const side = Math.floor(Math.random() * 4); 
                 if(side===0){
                     var posx = Math.random() * barCanvas.width-10;
@@ -153,7 +155,7 @@
                     var posy = Math.random() * barCanvas.height-10;
                 }                                                 
                 var enemy
-                if((score>14 && score<30)||(score>150 && i===5 || i===4 || i===3)){
+                if((score>14 && score<30)){
                     enemy = {
                     type:"ABL",
                     score:2,
@@ -165,7 +167,7 @@
                     };
                     enemies.push(enemy);
                 }
-                 if(score<15){
+                 if(score<15 ||(score>149 && score<160)){
                     enemy = {
                     type:"MSQ",
                     score:1,
@@ -177,7 +179,7 @@
                     };
                     enemies.push(enemy);
                 }
-                if((score>29 && score<40) || (score>150 && i===2)){
+                if((score>29 && score<40)||(score>159 && score<200)||(score>300 && (i === 1 || i=== 2))){
                      enemy = {
                     type:"SPD",
                     score:5,
@@ -189,7 +191,7 @@
                     };
                     enemies.push(enemy);
                 }
-                if(score>39 && score<60){
+                if((score>39 && score<60)||(score>150 && score<200)||(score>300 && i === 3)){
                      enemy = {
                     type:"SNK",
                     score:3,
@@ -201,7 +203,7 @@
                     };
                     enemies.push(enemy);
                 }
-                if(score>59 && score<100){
+                if((score>59 && score<100)||(score>240&& score<260)||(score>300 && (i === 4 || i=== 5))){
                      enemy = {
                     type:"MRB",
                     score:5,
@@ -213,7 +215,7 @@
                     };
                     enemies.push(enemy);
                 }
-                if(score>99 && score<120){
+                if((score>99 && score<120)||(score>259 && score<300)){
                      enemy = {
                     type:"LVD",
                     score:5,
@@ -225,7 +227,7 @@
                     };
                     enemies.push(enemy);
                 }
-                if((score>129 && score<150)||(score>150 && i===4)){
+                if((score>129 && score<150)||(score>259 && score<300)||(score>300 && (i === 6 || i=== 7))){
                      enemy = {
                     type:"SQR",
                     score:7,
@@ -783,6 +785,7 @@ function updateEnemies() {
             enemies = [];
             score = 0;
             bar.LP =10;
+            bar.level=1;
             game="play";
             bar.shot=1;
             bar.maxSpeed=0.06;
