@@ -41,7 +41,6 @@
         var projectiles = [];
         var trotle;
         var score = 0;
-        var cont = 0;
         var naveImage = new Image();
         var game = "play";
         var selected = 0;
@@ -277,24 +276,11 @@
             }
         }
 
-        var contUp = true
         function drawButton() {
             if(start_menu===true){
-                //OSCILAÇAO
-                if(cont>=1){
-                    contUp=false;
-                }
-                if(cont<=0){
-                    contUp=true;
-                }
-                if(contUp===true){
-                    cont=cont+0.02;
-                }else{
-                    cont=cont-0.02;
-                }
                 var gradient = ctx2.createLinearGradient(0, 0, analogCanvas.width, 0);
-                gradient.addColorStop(1-cont, "blue");
-                gradient.addColorStop(cont, "cyan");
+                gradient.addColorStop(1, "blue");
+                gradient.addColorStop(0.2, "cyan");
                 ctx2.font = '50px MinhaFonteExterna';
                 ctx2.fillStyle=gradient;
                 ctx2.fillText("astro", 40, barCanvas.height / 2);
